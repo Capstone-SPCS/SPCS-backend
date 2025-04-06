@@ -1,0 +1,81 @@
+name: myspaceagency
+
+services:
+  # Redis Service
+  redis:
+    image: redis:7
+    container_name: redis
+    restart: always
+    networks:
+      - myspaceagency_network
+    hostname: redis
+    command: redis-server --replica-read-only no  
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Express Server
+  express-server:
+    build:
+      context: ./express-server
+      dockerfile: Dockerfile
+    image: my-express-server:latest
+    container_name: express-server
+    ports:
+      - "${PORT}:${PORT}" 
+      #3837:3837
+      - "3837:3837"
+
+    networks:
+      - myspaceagency_network
+    volumes:
+      - ./express-server:/app:Z
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      PORT: ${PORT}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      HASURA_GRAPHQL_ADMIN_SECRET: ${HASURA_GRAPHQL_ADMIN_SECRET}
+      JWT_SECRET: ${JWT_SECRET}
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:${PORT}/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: always
+    depends_on:
+      redis:
+        condition: service_healthy
+  
+  # Hasura Service
+  hasura:
+    image: hasura/graphql-engine:v2.28.0
+    container_name: hasura
+    restart: always
+    networks:
+      - myspaceagency_network
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    ports:
+      - "8080:8080"
+    environment:
+      HASURA_GRAPHQL_DATABASE_URL: ${HASURA_GRAPHQL_DATABASE_URL}
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
+      HASURA_GRAPHQL_ADMIN_SECRET: ${HASURA_GRAPHQL_ADMIN_SECRET}
+      HASURA_GRAPHQL_JWT_SECRET: ${HASURA_GRAPHQL_JWT_SECRET}
+      HASURA_GRAPHQL_LOG_LEVEL: "info"
+      HASURA_GRAPHQL_UNAUTHORIZED_ROLE: "anon"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  myspaceagency_network:
+    driver: bridge

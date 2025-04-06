@@ -1,0 +1,14 @@
+node_modules
+dist
+.env
+.DS_Store
+.pm2
+*.log
+src/mockCdms
+src/mockCdms/
+mockCdms
+mockCdms/
+# Jest coverage directory
+coverage/
+# Supabase folder
+supabase/
