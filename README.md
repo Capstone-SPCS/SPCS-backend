@@ -1,4 +1,4 @@
-# MySpaceAgency-Backend
+# SPCS-Backend
 
 This is the backend server for the MySpaceAgency application, which handles CDM (Conjunction Data Message) processing and provides GraphQL API access to satellite conjunction data.
 
